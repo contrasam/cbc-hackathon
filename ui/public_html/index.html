@@ -13,18 +13,46 @@
         <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
 
         <link rel="stylesheet" href="css/normalize.css">
+		<link rel="stylesheet" href="css/bootstrap.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
         <style type="text/css">
             html, body, #map-canvas { height: 100%; margin: 0; padding: 0;}
         </style>
-        <script type="text/javascript">
-        </script>
+        
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCsiRbr6iAKM0TXTL9e1dbw1mIxJ-DgqnY&v=3.exp&signed_in=true"></script>
+		<script src="js/bootstrap.js"></script>
+		
+       
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+        <![endif]-->
 
+        <!-- Add your site or application content here -->
+        <p>Project CBC</p>
+		<div class="map-controls">
+			<input type="button" onclick="dropPointerAtCurrentPosition('robbery')" value="Report Robbery" />
+			<input type="button" onclick="dropPointerAtCurrentPosition('protest')" value="Report Protest" />
+			<input type="button" onclick="dropPointerAtCurrentPosition('ghost')" value="Report Ghost" />
+			<input type="button" onclick="dropPointerAtCurrentPosition('zombie')" value="Report Zombie Outbreak" />
+		</div>
+		<div id="map-canvas"></div>
+        <script src='https://cdn.firebase.com/js/client/2.2.1/firebase.js'></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+        <script src="js/plugins.js"></script>
+        <script src="js/main.js"></script>       
         <script>
+                var myDataRef = new Firebase('https://cbc-feed.firebaseio.com/');
+        </script>
+		<script>
 
                 var map;
+			    var marker;
+			    var current_lat;
+			    var current_lng;
 
                 function initialize() {
                     var mapOptions = {
@@ -38,11 +66,12 @@
                         navigator.geolocation.getCurrentPosition(function(position) {
                             var pos = new google.maps.LatLng(position.coords.latitude,
                                     position.coords.longitude);
-                            var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+							current_lat = position.coords.latitude;
+							current_lng = position.coords.longitude;
                             var infowindow = new google.maps.Marker({
                                 map: map,
                                 position: pos,
-                                icon: iconBase + 'ltblu_blank.png'
+                                icon: "https://mapicons.mapsmarker.com/wp-content/uploads/mapicons/shape-default/color-ffc11f/shapecolor-white/shadow-1/border-color/symbolstyle-color/symbolshadowstyle-no/gradient-no/male-2.png"
                             });
 
                             map.setCenter(pos);
@@ -53,7 +82,61 @@
                         // Browser doesn't support Geolocation
                         handleNoGeolocation(false);
                     }
+					
+					google.maps.event.addListener(
+					marker,
+					'drag',
+						function() {
+							placeMarker(new google.maps.LatLng(marker.position.lat(),marker.position.lng()));
+						}
+					);
                 }
+			
+			    var dropPointerAtCurrentPosition = function(type) {
+            		placeMarker(new google.maps.LatLng(current_lat,
+                                    current_lng),type);
+        		};
+				var icons = {
+					"robbery": "https://mapicons.mapsmarker.com/wp-content/uploads/mapicons/shape-default/color-c03638/shapecolor-color/shadow-1/border-dark/symbolstyle-white/symbolshadowstyle-dark/gradient-no/robbery.png",
+					"protest":"https://mapicons.mapsmarker.com/wp-content/uploads/mapicons/shape-default/color-c03638/shapecolor-color/shadow-1/border-dark/symbolstyle-white/symbolshadowstyle-dark/gradient-no/revolt.png",
+					"ghost":"https://mapicons.mapsmarker.com/wp-content/uploads/mapicons/shape-default/color-c03638/shapecolor-color/shadow-1/border-dark/symbolstyle-white/symbolshadowstyle-dark/gradient-no/phantom.png",
+					"zombie":"https://mapicons.mapsmarker.com/wp-content/uploads/mapicons/shape-default/color-c03638/shapecolor-color/shadow-1/border-dark/symbolstyle-white/symbolshadowstyle-dark/gradient-no/zombie-outbreak1.png"
+				};
+			    function placeMarker(location,type) {
+						if (marker == undefined){
+							marker = new google.maps.Marker({
+								position: location,
+								map: map,
+								animation: google.maps.Animation.DROP,
+								draggable:true,
+								icon: icons[type]
+							});
+							
+							var contentString = '<div id="content">'+
+					  '<div id="siteNotice">'+
+					  '</div>'+
+					  '<h1 id="firstHeading" class="firstHeading">Reports</h1>'+
+					  '<div id="bodyContent">'+
+					  '<form>'+
+								'Headline<br/><input type="text" /><br/>Details<br/>'+
+								'<textarea rows="4" cols="50"></textarea><br/>'+
+								'<input type="button" onclick="createPost()" value="post"/>'+
+				      '</form>'+
+					  '</div>'+
+					  '</div>';
+							
+							var infowindow = new google.maps.InfoWindow({
+					   			content: contentString
+				    		});
+							
+							google.maps.event.addListener(marker, 'click', function() {
+								infowindow.open(map,marker);
+							});
+						}else{
+							marker.setPosition(location);
+						}
+						//map.setCenter(location);
+        		}
 
                 function handleNoGeolocation(errorFlag) {
                     if (errorFlag) {
@@ -71,26 +154,45 @@
                     var infowindow = new google.maps.InfoWindow(options);
                     map.setCenter(options.position);
                 }
-
-                google.maps.event.addDomListener(window, 'load', initialize);
-        </script>
-    </head>
-    <body>
-        <!--[if lt IE 7]>
-            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
-        <![endif]-->
-
-        <!-- Add your site or application content here -->
-        <p>Project CBC</p>
-        <script src='https://cdn.firebase.com/js/client/2.2.1/firebase.js'></script>
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
-        <script src="js/plugins.js"></script>
-        <script src="js/main.js"></script>       
-        <script>
-                var myDataRef = new Firebase('https://cbc-app.firebaseio.com/');
+		
+                google.maps.event.addDomListener(window, 'load', initialize);		
+				
+				var getEvents = function(){
+					$.ajax({url: "http://hack-make.bitnamiapp.com:8080/events", success: function(result){
+						console.log(result);
+						result.result.forEach(function(event){
+							eventMarker = new google.maps.Marker({
+								position: new google.maps.LatLng(event.lat,event.lng),
+								map: map,
+								animation: google.maps.Animation.DROP,
+								icon: "https://mapicons.mapsmarker.com/wp-content/uploads/mapicons/shape-default/color-c259b5/shapecolor-color/shadow-1/border-dark/symbolstyle-contrast/symbolshadowstyle-dark/gradient-iphone/festival.png"
+							});
+							
+							var contentString = '<div id="content">'+
+							  '<div id="siteNotice">'+
+							  '</div>'+
+							  '<h1 id="firstHeading" class="firstHeading">'+event.title+'</h1>'+
+							  '<div id="bodyContent">'+
+							  '</div>'+
+							  '</div>';
+							
+							google.maps.event.addListener(eventMarker, 'click', function() {
+								var eventInfoWindow = new google.maps.InfoWindow({
+									content: contentString
+								});
+								eventInfoWindow.open(map,eventMarker);
+							});
+						});
+    				}});
+				}
+				
+				getEvents();
+			
+			    var createPost = function(){
+					window.location.href = "/project_cbc/public_html/report.html";
+				};
+			    
         </script>
         <div class="feed-form" ></div>
-        
     </body>
 </html>
